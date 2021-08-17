@@ -163,7 +163,9 @@ class BaseClient:
         old_format_schemas = result.value.pop('schema')
         result.value['schemas'] = [OrderedDict()]
         for s_id, field_ids in old_format_schemas.items():
-            result.value['schemas'].append(self._convert_schema(field_ids, binary_fields))
+            schema = self._convert_schema(field_ids, binary_fields)
+            if schema is not None:
+                result.value['schemas'].append(schema)
         return result
 
     @staticmethod
@@ -178,7 +180,9 @@ class BaseClient:
     def _convert_schema(self, field_ids: list, binary_fields: list) -> OrderedDict:
         converted_schema = OrderedDict()
         for field_id in field_ids:
-            binary_field = next(x for x in binary_fields if x['field_id'] == field_id)
+            binary_field = next((x for x in binary_fields if x['field_id'] == field_id), None)
+            if binary_field is None:
+                return None
             converted_schema[binary_field['field_name']] = self._convert_type(binary_field['type_id'])
         return converted_schema
 
