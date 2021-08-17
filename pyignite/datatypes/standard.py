@@ -14,7 +14,7 @@
 # limitations under the License.
 
 import ctypes
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 import decimal
 from io import SEEK_CUR
 from math import ceil
@@ -286,11 +286,11 @@ class TimestampObject(StandardObject):
     _object_c_type = None
     type_code = TC_TIMESTAMP
     pythonic = tuple
-    default = (datetime(1970, 1, 1), 0)
+    default = (datetime(1970, 1, 1, tzinfo=timezone.utc), 0)
 
     @classmethod
     def hashcode(cls, value: Tuple[datetime, int], **kwargs) -> int:
-        return datetime_hashcode(int(value[0].timestamp() * 1000))
+        return datetime_hashcode((value[0] - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
 
     @classmethod
     def build_c_type(cls):
@@ -317,7 +317,7 @@ class TimestampObject(StandardObject):
             cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
-        data_object.epoch = int(value[0].timestamp() * 1000)
+        data_object.epoch = (value[0] - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1)
         data_object.fraction = value[1]
 
         stream.write(data_object)
@@ -325,7 +325,7 @@ class TimestampObject(StandardObject):
     @classmethod
     def to_python_not_null(cls, ctypes_object, **kwargs):
         return (
-            datetime.fromtimestamp(ctypes_object.epoch / 1000),
+            datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(milliseconds=ctypes_object.epoch),
             ctypes_object.fraction
         )
 
