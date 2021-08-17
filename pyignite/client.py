@@ -161,7 +161,7 @@ class BaseClient:
 
         binary_fields = result.value.pop('binary_fields')
         old_format_schemas = result.value.pop('schema')
-        result.value['schemas'] = []
+        result.value['schemas'] = [OrderedDict()]
         for s_id, field_ids in old_format_schemas.items():
             result.value['schemas'].append(self._convert_schema(field_ids, binary_fields))
         return result
@@ -245,7 +245,7 @@ class BaseClient:
         :param type_id: Complex object type ID.
         :param schema: Complex object schema.
         """
-        if schema:
+        if schema is not None:
             try:
                 return self._registry[type_id][schema_id(schema)]
             except KeyError:

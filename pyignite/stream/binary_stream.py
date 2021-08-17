@@ -113,7 +113,7 @@ class BinaryStream(BinaryStreamBase):
 
     def get_dataclass(self, header):
         result = self.client.query_binary_type(header.type_id, header.schema_id)
-        if not result:
+        if result is None:
             raise RuntimeError('Binary type is not registered')
         return result
 
@@ -136,7 +136,7 @@ class AioBinaryStream(BinaryStreamBase):
 
     async def get_dataclass(self, header):
         result = await self.client.query_binary_type(header.type_id, header.schema_id)
-        if not result:
+        if result is None:
             raise RuntimeError('Binary type is not registered')
         return result
 

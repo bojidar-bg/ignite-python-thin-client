@@ -157,7 +157,7 @@ def schema_id(schema: Union[int, dict]) -> int:
 
 def __schema_id_fallback(schema: Union[int, dict]) -> int:
     if isinstance(schema, int):
-        return schema
+        return schema if schema != int_overflow(FNV1_OFFSET_BASIS) else 0
 
     if schema is None:
         return 0

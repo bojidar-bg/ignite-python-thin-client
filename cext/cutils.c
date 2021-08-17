@@ -150,7 +150,7 @@ PyObject* schema_id(PyObject* self, PyObject *args) {
     }
 
     if (PyLong_CheckExact(data)) {
-        return PyNumber_Long(data);
+        return (int32_t)PyLong_AsLong(data) != FNV1_OFFSET_BASIS ? PyNumber_Long(data) : PyLong_FromLong(0);
     }
     else if (data == Py_None) {
         return PyLong_FromLong(0);
