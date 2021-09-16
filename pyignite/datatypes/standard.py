@@ -290,7 +290,7 @@ class TimestampObject(StandardObject):
 
     @classmethod
     def hashcode(cls, value: Tuple[datetime, int], **kwargs) -> int:
-        return datetime_hashcode((value[0] - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1))
+        return datetime_hashcode((value[0] - datetime(1970, 1, 1, tzinfo=timezone.utc)) // timedelta(milliseconds=1))
 
     @classmethod
     def build_c_type(cls):
@@ -317,7 +317,7 @@ class TimestampObject(StandardObject):
             cls.type_code,
             byteorder=PROTOCOL_BYTE_ORDER
         )
-        data_object.epoch = (value[0] - datetime(1970, 1, 1, tzinfo=timezone.utc)) / timedelta(milliseconds=1)
+        data_object.epoch = (value[0] - datetime(1970, 1, 1, tzinfo=timezone.utc)) // timedelta(milliseconds=1)
         data_object.fraction = value[1]
 
         stream.write(data_object)
