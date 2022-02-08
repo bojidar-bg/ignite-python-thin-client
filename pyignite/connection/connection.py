@@ -371,7 +371,7 @@ class Connection(BaseConnection):
                     continue
                 elif bytes_to_receive == 0:
                     response_len = int.from_bytes(data[0:4], PROTOCOL_BYTE_ORDER)
-                    bytes_to_receive = response_len
+                    bytes_to_receive = response_len + 4
 
                     if response_len + 4 > len(data):
                         buffer.release()
