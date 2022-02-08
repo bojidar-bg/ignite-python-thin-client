@@ -17,6 +17,7 @@ import logging
 from collections import OrderedDict
 import socket
 from typing import Union
+from threading import Lock
 
 from pyignite.constants import PROTOCOLS, IGNITE_DEFAULT_HOST, IGNITE_DEFAULT_PORT, PROTOCOL_BYTE_ORDER
 from pyignite.exceptions import HandshakeError, SocketError, connection_errors, AuthenticationError, ParameterError
@@ -216,6 +217,7 @@ class Connection(BaseConnection):
         super().__init__(client, host, port, username, password, handshake_timeout, **ssl_params)
         self.timeout = timeout
         self._socket = None
+        self.lock = Lock()
 
     @property
     def closed(self) -> bool:
@@ -348,40 +350,43 @@ class Connection(BaseConnection):
         if flags is not None:
             kwargs['flags'] = flags
 
-        data = bytearray(1024)
+        data = bytearray(1024) # -- 4
         buffer = memoryview(data)
         bytes_total_received, bytes_to_receive = 0, 0
-        while True:
-            try:
-                bytes_received = self._socket.recv_into(buffer, len(buffer), **kwargs)
-                if bytes_received == 0:
-                    raise SocketError('Connection broken.')
-                bytes_total_received += bytes_received
-            except connection_errors as e:
-                self.failed = True
-                if reconnect:
-                    self._on_connection_lost(e)
-                    self.reconnect()
-                raise e
+        with lock:
+            while True:
+                try:
+                    bytes_received = self._socket.recv_into(buffer, len(buffer), **kwargs)
+                    if bytes_received == 0:
+                        raise SocketError('Connection broken.')
+                    bytes_total_received += bytes_received
+                except connection_errors as e:
+                    self.failed = True
+                    if reconnect:
+                        self._on_connection_lost(e)
+                        self.reconnect()
+                    raise e
 
-            if bytes_total_received < 4:
-                continue
-            elif bytes_to_receive == 0:
-                response_len = int.from_bytes(data[0:4], PROTOCOL_BYTE_ORDER)
-                bytes_to_receive = response_len
-
-                if response_len + 4 > len(data):
-                    buffer.release()
-                    data.extend(bytearray(response_len + 4 - len(data)))
-                    buffer = memoryview(data)[bytes_total_received:]
+                if bytes_total_received < 4:
                     continue
+                elif bytes_to_receive == 0:
+                    response_len = int.from_bytes(data[0:4], PROTOCOL_BYTE_ORDER)
+                    bytes_to_receive = response_len
 
-            if bytes_total_received >= bytes_to_receive:
-                buffer.release()
-                break
+                    if response_len + 4 > len(data):
+                        buffer.release()
+                        data.extend(bytearray(response_len + 4 - len(data)))
+                        buffer = memoryview(data)[bytes_total_received:]
+                        continue
 
-            buffer = buffer[bytes_received:]
+                if bytes_total_received >= bytes_to_receive:
+                    if bytes_total_received > bytes_to_receive:
+                        print("Total Recv > To Recv", bytes_total_received, bytes_to_receive)
+                    buffer.release()
+                    break
 
+                buffer = buffer[bytes_received:]
+        # extra bytes
         return data
 
     def close(self, on_reconnect=False):

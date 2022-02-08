@@ -389,6 +389,7 @@ class AnyDataObject:
         try:
             return tc_map(type_code)
         except KeyError:
+            print("Whole stream is:", stream.getvalue())
             raise ParseError('Unknown type code: `{}`'.format(type_code))
 
     @classmethod
