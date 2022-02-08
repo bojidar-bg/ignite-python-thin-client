@@ -353,7 +353,7 @@ class Connection(BaseConnection):
         data = bytearray(1024) # -- 4
         buffer = memoryview(data)
         bytes_total_received, bytes_to_receive = 0, 0
-        with lock:
+        with self.lock:
             while True:
                 try:
                     bytes_received = self._socket.recv_into(buffer, len(buffer), **kwargs)
